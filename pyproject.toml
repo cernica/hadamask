@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hadamask"
+version = "0.1.0"
+description = "Client-side protection for vector databases: keyed orthogonal transformation of embeddings and AES-GCM encryption of metadata."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Ionut Cernica" }]
+license = { text = "Apache-2.0" }
+keywords = ["vector database", "embeddings", "privacy", "obfuscation", "rag", "qdrant", "weaviate", "pgvector"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.26",
+    "cryptography>=42",
+]
+
+[project.urls]
+Paper = "https://doi.org/10.3390/app162010259"
+Homepage = "https://cernica.ai/"
+
+[project.scripts]
+hadamask = "hadamask.cli:main"
+
+[project.optional-dependencies]
+qdrant = ["qdrant-client>=1.12"]
+weaviate = ["weaviate-client>=4.10"]
+milvus = ["pymilvus>=2.5"]
+chroma = ["chromadb-client>=1.0"]
+pgvector = ["psycopg[binary]>=3.2", "pgvector>=0.3"]
+elasticsearch = ["elasticsearch>=8.15,<9"]
+opensearch = ["opensearch-py>=2.7"]
+redis = ["redis>=5.2"]
+mongodb = ["pymongo>=4.10"]
+langchain = ["langchain-core>=0.3"]
+llamaindex = ["llama-index-core>=0.12"]
+vault = ["hvac>=2.3"]
+aws = ["boto3>=1.34"]
+gcp = ["google-cloud-kms>=3.0"]
+azure = ["azure-keyvault-keys>=4.9", "azure-identity>=1.17"]
+kms = ["hadamask[vault,aws,gcp,azure]"]
+all = [
+    "hadamask[qdrant,weaviate,milvus,chroma,pgvector,elasticsearch,opensearch,redis,mongodb,langchain,llamaindex,kms]",
+]
+dev = ["pytest>=8", "ruff==0.8.6", "hadamask[all]", "langchain-qdrant>=1.1", "llama-index-vector-stores-qdrant>=0.10"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hadamask"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/hadamask", "tests", "examples", "docs", "docker", "docker-compose.yml",
+           "README.md", "LICENSE", "SECURITY.md", "CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: needs the local Docker databases (docker compose up -d)",
+    "cloud: needs Qdrant Cloud / Weaviate Cloud credentials",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+ignore = [
+    "E501",   # long lines are left to the formatter
+    "UP006", "UP007", "UP035", "UP038",  # keep Optional/List spelling readable across 3.10+
+    "B027",   # ProtectedStore.close is an optional hook
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S110", "S311", "S608", "E402", "B905"]

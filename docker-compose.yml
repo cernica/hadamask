@@ -1,0 +1,86 @@
+# Local vector databases used by the integration tests.
+# All services are bound to localhost only and run without authentication.
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.19.0
+    ports: ["127.0.0.1:6333:6333", "127.0.0.1:6334:6334"]
+
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.33.0
+    ports: ["127.0.0.1:8080:8080", "127.0.0.1:50051:50051"]
+    environment:
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: node1
+
+  milvus:
+    image: milvusdb/milvus:v2.6.0
+    command: ["milvus", "run", "standalone"]
+    security_opt: ["seccomp:unconfined"]
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+      DEPLOY_MODE: "STANDALONE"
+    volumes:
+      - ./docker/milvus-embedEtcd.yaml:/milvus/configs/embedEtcd.yaml:ro
+    ports: ["127.0.0.1:19530:19530"]
+
+  chroma:
+    image: chromadb/chroma:1.5.9
+    ports: ["127.0.0.1:8000:8000"]
+
+  pgvector:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: hadamask
+      POSTGRES_PASSWORD: hadamask
+      POSTGRES_DB: hadamask
+    ports: ["127.0.0.1:5433:5432"]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports: ["127.0.0.1:9200:9200"]
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ports: ["127.0.0.1:9201:9200"]
+
+  redis:
+    image: redis/redis-stack-server:7.4.0-v3
+    ports: ["127.0.0.1:6379:6379"]
+
+  mongodb:
+    image: mongodb/mongodb-atlas-local:8.0
+    ports: ["127.0.0.1:27017:27017"]
+
+  # Key management services used by tests/test_kms_*.py (development modes only).
+  vault:
+    image: hashicorp/vault:1.18.3
+    command: ["server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: hadamask-dev-token
+    cap_add: ["IPC_LOCK"]
+    ports: ["127.0.0.1:8200:8200"]
+
+  localstack:
+    image: localstack/localstack:3.8.1
+    environment:
+      SERVICES: kms
+    ports: ["127.0.0.1:4566:4566"]
+
+  lowkey-vault:
+    image: nagyesta/lowkey-vault:2.7.1
+    ports: ["127.0.0.1:8443:8443"]
