@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 (2026-10-17)
+
+First public release.
 
 - `Protector(..., transform="dense")`: dense Haar-uniform transform that keeps the native
   dimension. It has no padding overhead, makes HNSW possible on pgvector for 1536-d
@@ -10,10 +12,6 @@
 - Reproducible benchmark (`benchmarks/run.py`) against unprotected storage on real OpenAI
   embeddings.
 - Weekly CI run against the newest database client SDKs.
-
-## 0.1.0 (unreleased)
-
-First public version.
 
 - Keyed orthogonal transform `Q = H·D2·P·H·D1` with HMAC-SHA256 key derivation, padding to
   the next power of two, decoding, key re-mapping (`rekey_to`) and optional noise padding.

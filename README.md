@@ -6,8 +6,8 @@
 Keyed orthogonal obfuscation for embeddings, AES-256-GCM for metadata. Similarity search stays exact.
 
 [![CI](https://github.com/cernica/hadamask/actions/workflows/ci.yml/badge.svg)](https://github.com/cernica/hadamask/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/cernica/hadamask/blob/main/LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://github.com/cernica/hadamask/blob/main/pyproject.toml)
 [![Paper](https://img.shields.io/badge/paper-Applied%20Sciences%202026-green.svg)](https://doi.org/10.3390/app162010259)
 ![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)
 
@@ -131,12 +131,12 @@ vectorizers (the database must never receive clear text or clear vectors).
 Use hadamask where the threat is data at rest in a database you do not fully control. It
 raises the bar from "read the dump" to "mount an inference attack, with auxiliary data,
 against a geometry-only view". If you need the corpus geometry itself hidden, you need a
-cryptographic protocol or trusted hardware. See [SECURITY.md](SECURITY.md).
+cryptographic protocol or trusted hardware. See [SECURITY.md](https://github.com/cernica/hadamask/blob/main/SECURITY.md).
 
 ## Install
 
 ```bash
-pip install "hadamask[qdrant] @ git+https://github.com/cernica/hadamask"
+pip install "hadamask[qdrant]"
 ```
 
 Pick the extras you need: `qdrant`, `weaviate`, `milvus`, `chroma`, `pgvector`,
@@ -146,7 +146,7 @@ Python 3.10 or newer.
 
 ## Quick start
 
-This runs as is, with an in-memory Qdrant ([`examples/quickstart.py`](examples/quickstart.py)):
+This runs as is, with an in-memory Qdrant ([`examples/quickstart.py`](https://github.com/cernica/hadamask/blob/main/examples/quickstart.py)):
 
 ```python
 import numpy as np
@@ -416,7 +416,7 @@ checks that `score` equals the clear value for all three metrics on all nine eng
 these tests, recall@10 is 1.0 on every engine.
 
 Per-database notes, including index choices, quantization, and limits such as Redis ranges
-needing `numeric_fields`, are in [docs/databases.md](docs/databases.md).
+needing `numeric_fields`, are in [docs/databases.md](https://github.com/cernica/hadamask/blob/main/docs/databases.md).
 
 > [!NOTE]
 > Never configure a server-side vectorizer (Weaviate `text2vec-*`, Chroma embedding
@@ -512,7 +512,7 @@ protector = keyring.protector(MetadataPolicy(blind=["client_id"]))
 Wrapped keys are bound to their `key_id`: relabelling a wrapped key, or using it with
 another provider, fails. The application needs only encrypt/decrypt permission on one
 key. Setup, minimum permissions and policies for each provider are in
-[docs/key-management.md](docs/key-management.md).
+[docs/key-management.md](https://github.com/cernica/hadamask/blob/main/docs/key-management.md).
 
 ## Key rotation
 
@@ -562,7 +562,7 @@ float32 behaviour (paper, Section 5.7). Some engines quantize by default (Elasti
 queries. Each row compares a hadamask-protected collection with an unprotected one on the
 same database, with the same HNSW settings (`m=16`, `ef=128`), the same data, and one
 single-threaded client measuring end-to-end latency. Full tables, including p95/p99, ingest
-time and memory, are in [benchmarks/results/RESULTS.md](benchmarks/results/RESULTS.md).
+time and memory, are in [benchmarks/results/RESULTS.md](https://github.com/cernica/hadamask/blob/main/benchmarks/results/RESULTS.md).
 
 | | Qdrant, unprotected | Qdrant, hadamask `dense` | pgvector, unprotected | pgvector, hadamask `dense` |
 |---|---:|---:|---:|---:|
@@ -582,7 +582,7 @@ vectors/s in batches (0.17 ms for a single query). Encrypting or decrypting a pa
 Caveats: one machine (Apple Silicon laptop, databases in Docker); one run per
 configuration; HNSW graphs built from different coordinates differ slightly, so
 protected and unprotected top-10 sets overlap at 0.99 rather than 1.00, with the same
-recall. Reproduce with `python benchmarks/run.py` ([instructions](benchmarks/README.md)).
+recall. Reproduce with `python benchmarks/run.py` ([instructions](https://github.com/cernica/hadamask/blob/main/benchmarks/README.md)).
 
 ## Testing
 
@@ -620,4 +620,4 @@ pytest -m cloud                      # Qdrant Cloud and Weaviate Cloud (QDRANT_C
 
 ## License
 
-[Apache-2.0](LICENSE). Security issues: see [SECURITY.md](SECURITY.md).
+[Apache-2.0](https://github.com/cernica/hadamask/blob/main/LICENSE). Security issues: see [SECURITY.md](https://github.com/cernica/hadamask/blob/main/SECURITY.md).
