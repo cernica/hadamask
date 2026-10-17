@@ -6,6 +6,7 @@
 Keyed orthogonal obfuscation for embeddings, AES-256-GCM for metadata. Similarity search stays exact.
 
 [![CI](https://github.com/cernica/hadamask/actions/workflows/ci.yml/badge.svg)](https://github.com/cernica/hadamask/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/hadamask.svg)](https://pypi.org/project/hadamask/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/cernica/hadamask/blob/main/LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://github.com/cernica/hadamask/blob/main/pyproject.toml)
 [![Paper](https://img.shields.io/badge/paper-Applied%20Sciences%202026-green.svg)](https://doi.org/10.3390/app162010259)
