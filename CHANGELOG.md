@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 (2026-10-17)
+
+- Importing an adapter, integration or key manager without its extra now raises an
+  `ImportError` that names the extra to install (`pip install "hadamask[pgvector]"`),
+  instead of a bare `ModuleNotFoundError`.
+- README: install section explains the core package and the extras; links work on PyPI.
+
 ## 0.1.0 (2026-10-17)
 
 First public release.
