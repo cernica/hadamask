@@ -244,7 +244,7 @@ protector.stored_dim(384)           # 512: create collections with this size
 
 ### Choosing a transform
 
-| | `transform="hadamard"` (default) | `transform="haar"` |
+| | `transform="hadamard"` (default) | `transform="dense"` |
 |---|---|---|
 | Map | `H·D2·P·H·D1` (paper, Eq. 3), structured, `O(d log d)` | Dense Haar-uniform orthogonal matrix, `O(d²)` |
 | Stored dimension | Next power of two: 384 → 512, 1536 → **2048** | **Native**: 1536 stays 1536 |
@@ -254,13 +254,33 @@ protector.stored_dim(384)           # 512: create collections with this size
 | Security analysis | Structured key family; the paper's Haar theorems do not apply directly | Exactly the Haar ideal of the paper's Section 3.4 |
 
 ```python
-protector = Protector(key, policy, transform="haar")
+protector = Protector(key, policy, transform="dense")
 ```
+
+**What the two transforms are.**
+
+- `hadamard` is the construction from the paper. `H` is the Walsh–Hadamard matrix: a
+  fixed, public matrix of ±1 entries that can be applied in `O(d log d)`. The secret is the
+  sign vectors `D1`, `D2` and the permutation `P`. That speed comes from structure: only
+  power-of-two sizes work, and every key selects a map from a small, highly structured family.
+- `dense` is a full `d × d` orthogonal matrix with no structure at all. It is drawn
+  *uniformly at random among all rotations and reflections* of `d`-dimensional space:
+  hadamask fills a matrix with Gaussian numbers derived from your key, orthogonalizes it
+  (QR), and fixes the column signs. Mathematicians call that uniform distribution the *Haar
+  measure*, which is why the paper calls it the Haar ideal. This has nothing to do with the
+  Haar *wavelet*, and no Hadamard matrix is involved. The same key always gives the same
+  matrix.
+
+`dense` does not make the attacks measured in the paper harder: the geometry leaks the
+same way, and `d` known pairs recover either map. What it changes is that the paper's
+results for the ideal transform (a snapshot reveals exactly the Gram matrix and nothing
+more) describe your stored data directly, with no structured family left that a future
+attack could exploit. It also removes padding.
 
 Both preserve scores exactly, and both leak the same relative geometry (the Gram matrix).
 Padding to a larger dimension adds **no** security: the data still spans a `d`-dimensional
 subspace, so its rank reveals `d`, and its spectrum is unchanged (paper, Proposition 1). For
-1536-d or 3072-d embeddings, or any pgvector deployment, use `haar`. A collection must be
+1536-d or 3072-d embeddings, or any pgvector deployment, use `dense`. A collection must be
 written and queried with the same transform.
 
 ## The store API
@@ -507,7 +527,7 @@ hadamask info 1536                                          # 1536 -> stored dim
 | Transform | `Q = H·D2·P·H·D1` (paper, Eq. 3). `H` is the normalized Walsh–Hadamard transform (FWHT, O(D log D)), `D1`/`D2` are sign vectors, `P` is a permutation |
 | Randomness | HMAC-SHA256 streams of the master key with separate labels; Fisher–Yates with rejection sampling for `P` |
 | Dimensions | Native `d` is zero-padded to the next power of two `D`; queries are padded the same way |
-| Haar transform | `transform="haar"`: sign-corrected QR of a Gaussian matrix drawn from a ChaCha20 keystream under a derived key; exactly Haar-uniform, no padding |
+| Dense transform | `transform="dense"`: sign-corrected QR of a Gaussian matrix drawn from a ChaCha20 keystream under a derived key; exactly Haar-uniform, no padding |
 | Metadata | AES-256-GCM, 96-bit random nonce per value; associated data = key id and field name |
 | Length hiding | ISO/IEC 7816-4 padding to `min_padded_length` (64 bytes), then powers of two, or a fixed size per field |
 | Blind tokens | HMAC-SHA256 under a derived key, truncated to 128 bits |
@@ -529,7 +549,7 @@ same database, with the same HNSW settings (`m=16`, `ef=128`), the same data, an
 single-threaded client measuring end-to-end latency. Full tables, including p95/p99, ingest
 time and memory, are in [benchmarks/results/RESULTS.md](benchmarks/results/RESULTS.md).
 
-| | Qdrant, unprotected | Qdrant, hadamask `haar` | pgvector, unprotected | pgvector, hadamask `haar` |
+| | Qdrant, unprotected | Qdrant, hadamask `dense` | pgvector, unprotected | pgvector, hadamask `dense` |
 |---|---:|---:|---:|---:|
 | Recall@10 vs exact search | 0.991 | 0.991 | 0.995 | 0.995 |
 | Query latency p50 | 3.63 ms | 4.01 ms (1.11×) | 5.69 ms | 6.34 ms (1.11×) |
@@ -539,7 +559,7 @@ time and memory, are in [benchmarks/results/RESULTS.md](benchmarks/results/RESUL
 
 With the default `hadamard` transform, the 2048-d stored vectors cost +34% storage on
 Qdrant. On pgvector they cannot be HNSW-indexed at all, so search falls back to an exact
-scan: 212 ms instead of 5.7 ms. On the client, the `haar` transform runs at about 77,000
+scan: 212 ms instead of 5.7 ms. On the client, the `dense` transform runs at about 77,000
 vectors/s in batches (0.17 ms for a single query). Encrypting or decrypting a payload
 (title and text) takes 5–7 µs; padding and the envelope grow the mean payload from 404 to
 838 bytes.

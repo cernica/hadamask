@@ -312,43 +312,43 @@ def test_langchain_refuses_to_store_unprepared_vectors(key):
 
 
 @pytest.mark.parametrize("d", [1, 3, 7, 384, 1536])
-def test_haar_transform_is_orthogonal_without_padding(key, d):
-    from hadamask import HaarTransform
+def test_dense_transform_is_orthogonal_without_padding(key, d):
+    from hadamask import DenseTransform
 
-    t = HaarTransform(key, d)
+    t = DenseTransform(key, d)
     assert t.processing_dim == d
     x = unit_rows(40, d)
     y = t.encode(x)
     assert y.shape == (40, d)
     assert np.abs(x @ x.T - y.astype(np.float64) @ y.T.astype(np.float64)).max() < 1e-5
     assert np.allclose(t.decode(y), x, atol=1e-6)
-    assert np.array_equal(t.encode(x), HaarTransform(MasterKey(key.secret), d).encode(x))
+    assert np.array_equal(t.encode(x), DenseTransform(MasterKey(key.secret), d).encode(x))
 
 
-def test_haar_and_hadamard_are_independent_maps(key):
+def test_dense_and_hadamard_are_independent_maps(key):
     x = unit_rows(5, 512)
-    assert not np.allclose(Protector(key, transform="haar").encode(x), Protector(key).encode(x))
+    assert not np.allclose(Protector(key, transform="dense").encode(x), Protector(key).encode(x))
 
 
-def test_haar_protector_keeps_dimension_and_rekeys(key):
-    from hadamask import HaarTransform
+def test_dense_protector_keeps_dimension_and_rekeys(key):
+    from hadamask import DenseTransform
 
-    p = Protector(key, transform="haar")
+    p = Protector(key, transform="dense")
     assert p.stored_dim(1536) == 1536
-    old, new = HaarTransform(key, 64), HaarTransform(MasterKey.generate("k2"), 64)
+    old, new = DenseTransform(key, 64), DenseTransform(MasterKey.generate("k2"), 64)
     x = unit_rows(4, 64)
     assert np.allclose(old.rekey_to(new, old.encode(x)), new.encode(x), atol=1e-6)
     with pytest.raises(ValueError):
-        Protector(key, transform="haar", processing_dims={384: 1024})
+        Protector(key, transform="dense", processing_dims={384: 1024})
     with pytest.raises(ValueError):
         Protector(key, transform="rot13")
     with pytest.raises(ValueError, match="noise padding"):
         p.transform(16).encode(np.ones(16), noise_norm=0.1)
 
 
-def test_haar_first_column_is_uniform_on_the_sphere():
-    from hadamask import HaarTransform
+def test_dense_first_column_is_uniform_on_the_sphere():
+    from hadamask import DenseTransform
 
-    cols = np.array([HaarTransform(MasterKey.generate(), 4)._q[:, 0] for _ in range(3000)])
+    cols = np.array([DenseTransform(MasterKey.generate(), 4)._q[:, 0] for _ in range(3000)])
     assert np.allclose(cols.mean(axis=0), 0, atol=0.05)
     assert np.allclose((cols**2).mean(axis=0), 0.25, atol=0.02)

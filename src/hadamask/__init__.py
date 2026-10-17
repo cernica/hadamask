@@ -7,11 +7,11 @@ measured leakage - not encryption); metadata is encrypted per field with AES-256
 from .core import Protector
 from .keys import MasterKey
 from .metadata import DecryptionError, MetadataCipher, MetadataPolicy
-from .transform import HaarTransform, OrthogonalTransform
+from .transform import DenseTransform, OrthogonalTransform
 
 __all__ = [
     "DecryptionError",
-    "HaarTransform",
+    "DenseTransform",
     "MasterKey",
     "MetadataCipher",
     "MetadataPolicy",

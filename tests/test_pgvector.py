@@ -72,8 +72,8 @@ def test_hnsw_dimension_limit_is_explained():
     from hadamask import MasterKey, Protector
 
     require_service(5433, "pgvector")
-    with pytest.raises(ValueError, match="transform='haar'"):
+    with pytest.raises(ValueError, match="transform='dense'"):
         PgVectorStore(DSN, Protector(MasterKey.generate()), hnsw=True).create_collection("too_wide", 1536)
-    store = PgVectorStore(DSN, Protector(MasterKey.generate(), transform="haar"), hnsw=True)
-    store.create_collection("haar_1536", 1536)
-    store.drop_collection("haar_1536")
+    store = PgVectorStore(DSN, Protector(MasterKey.generate(), transform="dense"), hnsw=True)
+    store.create_collection("dense_1536", 1536)
+    store.drop_collection("dense_1536")

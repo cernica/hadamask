@@ -205,7 +205,7 @@ def client_costs(protector: Protector, docs: np.ndarray, payloads: list[dict]) -
 # Each benchmark builds one collection per variant, with identical index settings:
 #   clear     native client, raw vectors, plaintext payloads (the baseline)
 #   hadamard  hadamask default transform (padded to a power of two), encrypted payloads
-#   haar      hadamask dense Haar transform (native dimension), encrypted payloads
+#   dense     hadamask dense Haar-distributed transform (native dimension), encrypted payloads
 
 
 def variants(native_dim: int) -> list[tuple[str, Protector | None]]:
@@ -213,7 +213,7 @@ def variants(native_dim: int) -> list[tuple[str, Protector | None]]:
     return [
         ("clear", None),
         ("hadamard", Protector(key, MetadataPolicy())),
-        ("haar", Protector(key, MetadataPolicy(), transform="haar")),
+        ("dense", Protector(key, MetadataPolicy(), transform="dense")),
     ]
 
 
@@ -395,8 +395,8 @@ BENCHES = {"qdrant": bench_qdrant, "pgvector": bench_pgvector}
 
 # -- report -------------------------------------------------------------------------------------
 
-VARIANTS = ("clear", "hadamard", "haar")
-LABELS = {"clear": "Unprotected", "hadamard": "hadamask (hadamard)", "haar": "hadamask (haar)"}
+VARIANTS = ("clear", "hadamard", "dense")
+LABELS = {"clear": "Unprotected", "hadamard": "hadamask (hadamard)", "dense": "hadamask (dense)"}
 
 
 def summarize(results: list[Result], n_docs: int, k: int) -> dict:
@@ -439,16 +439,16 @@ def markdown(summary: dict, client: dict, meta: dict) -> str:
         "",
         "## Client-side cost (no database)",
         "",
-        "| | hadamard | haar |",
+        "| | hadamard | dense |",
         "|---|---:|---:|",
-        f"| Stored dimension | {client['hadamard']['stored_dim']} | {client['haar']['stored_dim']} |",
+        f"| Stored dimension | {client['hadamard']['stored_dim']} | {client['dense']['stored_dim']} |",
         f"| Transform throughput, batches of 1000 | {client['hadamard']['encode_vectors_per_s']:,.0f} vectors/s | "
-        f"{client['haar']['encode_vectors_per_s']:,.0f} vectors/s |",
+        f"{client['dense']['encode_vectors_per_s']:,.0f} vectors/s |",
         f"| Transform CPU per 1M vectors | {client['hadamard']['encode_cpu_s_per_1M_vectors']:.0f} CPU-s | "
-        f"{client['haar']['encode_cpu_s_per_1M_vectors']:.0f} CPU-s |",
+        f"{client['dense']['encode_cpu_s_per_1M_vectors']:.0f} CPU-s |",
         f"| Transform latency, one query (p50 / p95) | {client['hadamard']['encode_single_query']['p50_ms']:.3f} / "
-        f"{client['hadamard']['encode_single_query']['p95_ms']:.3f} ms | {client['haar']['encode_single_query']['p50_ms']:.3f} / "
-        f"{client['haar']['encode_single_query']['p95_ms']:.3f} ms |",
+        f"{client['hadamard']['encode_single_query']['p95_ms']:.3f} ms | {client['dense']['encode_single_query']['p50_ms']:.3f} / "
+        f"{client['dense']['encode_single_query']['p95_ms']:.3f} ms |",
         f"| Encrypt / decrypt one payload (title + text) | {client['hadamard']['encrypt_us_per_record']:.0f} / "
         f"{client['hadamard']['decrypt_us_per_record']:.0f} µs | same |",
         f"| Mean payload size, clear → encrypted | {client['hadamard']['payload_bytes_clear']:.0f} → "
@@ -509,7 +509,7 @@ def main() -> int:
     key = MasterKey.generate("bench")
     client = {
         "hadamard": client_costs(Protector(key, MetadataPolicy()), docs, payloads),
-        "haar": client_costs(Protector(key, MetadataPolicy(), transform="haar"), docs, payloads),
+        "dense": client_costs(Protector(key, MetadataPolicy(), transform="dense"), docs, payloads),
     }
 
     results = []

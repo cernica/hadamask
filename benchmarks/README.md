@@ -2,7 +2,7 @@
 
 `run.py` compares, on the same database and with identical index settings, an unprotected
 collection (written with the native client) against hadamask-protected collections with
-the `hadamard` and `haar` transforms. It reports recall against exact search, latency,
+the `hadamard` and `dense` transforms. It reports recall against exact search, latency,
 throughput, ingest time, on-disk size, server CPU (read from the container's cgroup),
 client CPU and memory, and extrapolates storage and CPU to one million vectors or queries.
 

@@ -122,7 +122,7 @@ class PgVectorStore(ProtectedStore):
         if self.hnsw and stored > HNSW_MAX_DIM:
             raise ValueError(
                 f"pgvector HNSW indexes support at most {HNSW_MAX_DIM} dimensions, but {dim}-d vectors are stored "
-                f"as {stored}-d with the hadamard transform. Use Protector(..., transform='haar') to keep {dim} "
+                f"as {stored}-d with the hadamard transform. Use Protector(..., transform='dense') to keep {dim} "
                 "dimensions, or hnsw=False for exact scans."
             )
         with self.conn.transaction():

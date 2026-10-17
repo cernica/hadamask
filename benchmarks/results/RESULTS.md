@@ -4,7 +4,7 @@
 
 ## Client-side cost (no database)
 
-| | hadamard | haar |
+| | hadamard | dense |
 |---|---:|---:|
 | Stored dimension | 2048 | 1536 |
 | Transform throughput, batches of 1000 | 11,949 vectors/s | 76,970 vectors/s |
@@ -15,7 +15,7 @@
 
 ## pgvector
 
-| Metric | Unprotected | hadamask (hadamard) | hadamask (haar) |
+| Metric | Unprotected | hadamask (hadamard) | hadamask (dense) |
 |---|---:|---:|---:|
 | Stored dimension | 1536 | 2048 (1.33×) | 1536 (1.00×) |
 | Recall@10 vs exact search | 0.9951 | 1.0000 | 0.9952 |
@@ -35,7 +35,7 @@
 
 ## qdrant
 
-| Metric | Unprotected | hadamask (hadamard) | hadamask (haar) |
+| Metric | Unprotected | hadamask (hadamard) | hadamask (dense) |
 |---|---:|---:|---:|
 | Stored dimension | 1536 | 2048 (1.33×) | 1536 (1.00×) |
 | Recall@10 vs exact search | 0.9911 | 0.9916 | 0.9908 |

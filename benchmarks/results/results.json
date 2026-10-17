@@ -23,7 +23,7 @@
       "payload_bytes_clear": 404.1656,
       "payload_bytes_encrypted": 837.5434
     },
-    "haar": {
+    "dense": {
       "native_dim": 1536,
       "stored_dim": 1536,
       "encode_vectors_per_s": 76970.13729757264,
@@ -82,7 +82,7 @@
         "server_cpu_s_per_1M_queries": 637854.8259999998,
         "client_cpu_s_per_1M_queries": 717.708000000016
       },
-      "haar": {
+      "dense": {
         "stored_dim": 1536,
         "note": "",
         "recall_at_k": 0.9952000000000001,
@@ -144,7 +144,7 @@
         "server_cpu_s_per_1M_queries": 2472.837000000027,
         "client_cpu_s_per_1M_queries": 1453.9240000000007
       },
-      "haar": {
+      "dense": {
         "stored_dim": 1536,
         "note": "",
         "recall_at_k": 0.9907999999999999,

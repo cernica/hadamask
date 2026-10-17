@@ -81,7 +81,7 @@ in our tests (a server bug), and `$eq` does not match array elements anyway.
 **pgvector.** pgvector's HNSW index accepts at most 2000 dimensions for the `vector` type.
 With the default `hadamard` transform, 1536-d embeddings (OpenAI ada-002,
 text-embedding-3-small) are stored as 2048-d and cannot be HNSW-indexed: use
-`Protector(..., transform="haar")`, which keeps 1536 dimensions. `PgVectorStore` raises a
+`Protector(..., transform="dense")`, which keeps 1536 dimensions. `PgVectorStore` raises a
 clear error instead of Postgres' `ProgramLimitExceeded`. Search settings are applied with a
 single `set_config` round trip. Note that at small table sizes, a high `ef_search` can make
 the planner prefer an exact sequential scan.

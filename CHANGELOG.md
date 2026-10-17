@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- `Protector(..., transform="haar")`: dense Haar-uniform transform that keeps the native
+- `Protector(..., transform="dense")`: dense Haar-uniform transform that keeps the native
   dimension. It has no padding overhead, makes HNSW possible on pgvector for 1536-d
   embeddings (limit 2000), and matches the paper's ideal analysis exactly.
 - `PgVectorStore` explains pgvector's 2000-dimension HNSW limit instead of failing in Postgres,

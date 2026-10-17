@@ -154,7 +154,7 @@ class OrthogonalTransform:
         return out[0] if single else out
 
 
-class HaarTransform:
+class DenseTransform:
     """Dense keyed orthogonal map ``v -> Q v`` with ``Q`` Haar-distributed in ``O(d)``.
 
     No padding: protected vectors keep the native dimension, so there is no storage
@@ -179,7 +179,7 @@ class HaarTransform:
         self.key_id = key.key_id
         self.dim = dim
         self.processing_dim = dim
-        seed = key.derive(f"transform/haar/d={dim}")
+        seed = key.derive(f"transform/dense/d={dim}")
         stream = Cipher(algorithms.ChaCha20(seed, b"\x00" * 16), mode=None).encryptor()
         n = dim * dim
         half = (n + 1) // 2  # Box-Muller needs pairs: draw 2 * half uniforms
@@ -220,10 +220,10 @@ class HaarTransform:
         out = (arr @ self._q).astype(np.float32)
         return out[0] if single else out
 
-    def rekey_to(self, new: HaarTransform, vectors) -> np.ndarray:
+    def rekey_to(self, new: DenseTransform, vectors) -> np.ndarray:
         """Re-map stored vectors to ``new`` without re-embedding (``Q_new Q_old^T``)."""
-        if not isinstance(new, HaarTransform) or new.dim != self.dim:
-            raise ValueError("both transforms must be Haar transforms of the same dimension")
+        if not isinstance(new, DenseTransform) or new.dim != self.dim:
+            raise ValueError("both transforms must be dense transforms of the same dimension")
         arr, single = self._as_matrix(vectors)
         out = ((arr @ self._q) @ new._q.T).astype(np.float32)
         return out[0] if single else out

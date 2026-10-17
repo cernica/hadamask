@@ -8,9 +8,9 @@ import numpy as np
 
 from .keys import MasterKey
 from .metadata import MetadataCipher, MetadataPolicy
-from .transform import HaarTransform, OrthogonalTransform, next_power_of_two
+from .transform import DenseTransform, OrthogonalTransform, next_power_of_two
 
-TRANSFORMS = ("hadamard", "haar")
+TRANSFORMS = ("hadamard", "dense")
 
 
 class Protector:
@@ -32,7 +32,7 @@ class Protector:
         Older keys, used only to decrypt metadata written before a key rotation.
     transform:
         ``"hadamard"`` (default): the paper's structured map ``H·D2·P·H·D1``, fast, but pads
-        to a power of two (1536 -> 2048). ``"haar"``: a dense Haar-uniform map that keeps the
+        to a power of two (1536 -> 2048). ``"dense"``: a dense Haar-uniform map that keeps the
         native dimension (no storage overhead, fits pgvector's 2000-dimension HNSW limit)
         at the cost of an ``O(d^2)`` transform and ``8·d²`` bytes of memory. The two produce
         different vectors: a collection must be written and queried with the same one.
@@ -48,13 +48,13 @@ class Protector:
     ) -> None:
         if transform not in TRANSFORMS:
             raise ValueError(f"transform must be one of {TRANSFORMS}, got {transform!r}")
-        if transform == "haar" and processing_dims:
+        if transform == "dense" and processing_dims:
             raise ValueError("processing_dims applies to the hadamard transform only")
         self.key = key
         self.transform_kind = transform
         self.metadata = MetadataCipher(key, policy, previous_keys)
         self._processing_dims = dict(processing_dims or {})
-        self._transforms: dict[int, OrthogonalTransform | HaarTransform] = {}
+        self._transforms: dict[int, OrthogonalTransform | DenseTransform] = {}
 
     @property
     def key_id(self) -> str:
@@ -66,17 +66,17 @@ class Protector:
 
     # -- vectors ---------------------------------------------------------------------
 
-    def transform(self, dim: int) -> OrthogonalTransform | HaarTransform:
+    def transform(self, dim: int) -> OrthogonalTransform | DenseTransform:
         if dim not in self._transforms:
-            if self.transform_kind == "haar":
-                self._transforms[dim] = HaarTransform(self.key, dim)
+            if self.transform_kind == "dense":
+                self._transforms[dim] = DenseTransform(self.key, dim)
             else:
                 self._transforms[dim] = OrthogonalTransform(self.key, dim, self._processing_dims.get(dim))
         return self._transforms[dim]
 
     def stored_dim(self, dim: int) -> int:
         """Dimension of protected vectors for native dimension ``dim`` (create collections with it)."""
-        if self.transform_kind == "haar":
+        if self.transform_kind == "dense":
             return dim
         return self._processing_dims.get(dim) or next_power_of_two(dim)
 
