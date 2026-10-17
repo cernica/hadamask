@@ -31,10 +31,16 @@ from collections.abc import Iterator
 from typing import Any, Optional, Union
 
 import numpy as np
-import psycopg
-from pgvector.psycopg import register_vector
-from psycopg import sql
-from psycopg.types.json import Jsonb
+
+from .._deps import missing_extra
+
+try:
+    import psycopg
+    from pgvector.psycopg import register_vector
+    from psycopg import sql
+    from psycopg.types.json import Jsonb
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("pgvector", exc) from exc
 
 from ..core import Protector
 from .base import And, Condition, Filter, ProtectedStore, RawHit, RawRecord

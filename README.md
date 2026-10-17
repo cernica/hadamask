@@ -136,13 +136,27 @@ cryptographic protocol or trusted hardware. See [SECURITY.md](https://github.com
 
 ## Install
 
+Install hadamask with the extra for your database:
+
 ```bash
-pip install "hadamask[qdrant]"
+pip install "hadamask[pgvector]"            # or qdrant, weaviate, milvus, chroma, ...
+pip install "hadamask[qdrant,langchain]"    # several at once
+pip install "hadamask[all]"                 # every database, framework and key manager
 ```
 
-Pick the extras you need: `qdrant`, `weaviate`, `milvus`, `chroma`, `pgvector`,
-`elasticsearch`, `opensearch`, `redis`, `mongodb`, `langchain`, `llamaindex`, and for key
-management `vault`, `aws`, `gcp`, `azure` (or `kms` for all four). `all` installs everything.
+`pip install hadamask` alone installs only the core (vector transform and metadata
+encryption, which depend on `numpy` and `cryptography`). Each extra adds the client SDK
+it needs, so a pgvector deployment does not pull in a dozen other database SDKs. If an
+extra is missing, the import tells you which one to install.
+
+| Extra | Adds |
+|---|---|
+| `qdrant` `weaviate` `milvus` `chroma` `pgvector` | vector database clients |
+| `elasticsearch` `opensearch` `redis` `mongodb` | search engine and database clients |
+| `langchain` `llamaindex` | RAG framework integrations |
+| `vault` `aws` `gcp` `azure` (or `kms` for all four) | key managers |
+| `all` | everything above |
+
 Python 3.10 or newer.
 
 ## Quick start

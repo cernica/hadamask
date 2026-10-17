@@ -14,7 +14,13 @@ from collections.abc import Iterator
 from typing import Any, Mapping, Optional, Sequence
 
 import numpy as np
-from qdrant_client import QdrantClient, models
+
+from .._deps import missing_extra
+
+try:
+    from qdrant_client import QdrantClient, models
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("qdrant", exc) from exc
 
 from ..core import Protector
 from .base import And, Condition, Filter, ProtectedStore, RawHit, RawRecord

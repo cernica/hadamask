@@ -26,8 +26,13 @@ import math
 from collections.abc import Iterator
 from typing import Optional
 
-from opensearchpy import OpenSearch
-from opensearchpy.helpers import bulk
+from .._deps import missing_extra
+
+try:
+    from opensearchpy import OpenSearch
+    from opensearchpy.helpers import bulk
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("opensearch", exc) from exc
 
 from ..core import Protector
 from ._mappings import ID_FIELD, compile_filter, dynamic_templates

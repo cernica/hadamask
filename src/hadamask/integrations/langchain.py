@@ -36,9 +36,14 @@ from __future__ import annotations
 import uuid
 from typing import Any, Callable, Iterable, Optional, Sequence
 
-from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
-from langchain_core.vectorstores import InMemoryVectorStore, VectorStore
+from .._deps import missing_extra
+
+try:
+    from langchain_core.documents import Document
+    from langchain_core.embeddings import Embeddings
+    from langchain_core.vectorstores import InMemoryVectorStore, VectorStore
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("langchain", exc) from exc
 
 from ..adapters.base import Condition
 from ..core import Protector

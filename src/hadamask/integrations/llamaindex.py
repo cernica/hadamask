@@ -28,18 +28,23 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Sequence
 
-from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
-from llama_index.core.bridge.pydantic import PrivateAttr
-from llama_index.core.schema import BaseNode, RelatedNodeInfo
-from llama_index.core.vector_stores.types import (
-    BasePydanticVectorStore,
-    FilterOperator,
-    MetadataFilter,
-    MetadataFilters,
-    VectorStoreQuery,
-    VectorStoreQueryMode,
-    VectorStoreQueryResult,
-)
+from .._deps import missing_extra
+
+try:
+    from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
+    from llama_index.core.bridge.pydantic import PrivateAttr
+    from llama_index.core.schema import BaseNode, RelatedNodeInfo
+    from llama_index.core.vector_stores.types import (
+        BasePydanticVectorStore,
+        FilterOperator,
+        MetadataFilter,
+        MetadataFilters,
+        VectorStoreQuery,
+        VectorStoreQueryMode,
+        VectorStoreQueryResult,
+    )
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("llamaindex", exc) from exc
 
 from ..core import Protector
 from ..metadata import RESERVED_PREFIX

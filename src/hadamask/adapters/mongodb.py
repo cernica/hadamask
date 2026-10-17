@@ -31,9 +31,15 @@ from collections.abc import Iterator
 from typing import Any, Optional
 
 import numpy as np
-from pymongo import ReplaceOne
-from pymongo.database import Database
-from pymongo.operations import SearchIndexModel
+
+from .._deps import missing_extra
+
+try:
+    from pymongo import ReplaceOne
+    from pymongo.database import Database
+    from pymongo.operations import SearchIndexModel
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("mongodb", exc) from exc
 
 from ..core import Protector
 from .base import And, Condition, Filter, ProtectedStore, RawHit, RawRecord

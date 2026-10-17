@@ -39,11 +39,17 @@ from collections.abc import Iterator
 from typing import Any, Iterable, Optional
 
 import numpy as np
-import redis
-from redis.commands.search.aggregation import AggregateRequest
-from redis.commands.search.field import NumericField, TagField, VectorField
-from redis.commands.search.index_definition import IndexDefinition, IndexType
-from redis.commands.search.query import Query
+
+from .._deps import missing_extra
+
+try:
+    import redis
+    from redis.commands.search.aggregation import AggregateRequest
+    from redis.commands.search.field import NumericField, TagField, VectorField
+    from redis.commands.search.index_definition import IndexDefinition, IndexType
+    from redis.commands.search.query import Query
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("redis", exc) from exc
 
 from ..core import Protector
 from .base import And, Condition, Filter, ProtectedStore, RawHit, RawRecord

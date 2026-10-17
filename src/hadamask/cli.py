@@ -7,6 +7,7 @@ import base64
 import os
 import sys
 
+from ._deps import missing_extra
 from .keys import MasterKey
 from .transform import next_power_of_two
 
@@ -23,7 +24,10 @@ def _wrapper(args):
 
         return LocalKeyWrapper(base64.b64decode(kek))
     if args.wrap == "vault-transit":
-        import hvac
+        try:
+            import hvac
+        except ImportError as exc:
+            raise missing_extra("vault", exc) from exc
 
         from .kms.vault import VaultTransitKeyWrapper
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .._deps import missing_extra
 from .base import KeyWrapper
 
 _CONTEXT_KEY = "hadamask-context"
@@ -19,7 +20,10 @@ class AwsKmsKeyWrapper(KeyWrapper):
 
     def __init__(self, key_id: str, client=None, region_name: str | None = None, endpoint_url: str | None = None):
         if client is None:
-            import boto3
+            try:
+                import boto3
+            except ImportError as exc:
+                raise missing_extra("aws", exc) from exc
 
             client = boto3.client("kms", region_name=region_name, endpoint_url=endpoint_url)
         self.client = client

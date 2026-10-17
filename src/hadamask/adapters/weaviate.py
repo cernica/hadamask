@@ -34,9 +34,14 @@ import math
 from collections.abc import Iterator
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
-import weaviate.classes.config as wc
-from weaviate.classes.data import DataObject
-from weaviate.classes.query import Filter, MetadataQuery, Sort
+from .._deps import missing_extra
+
+try:
+    import weaviate.classes.config as wc
+    from weaviate.classes.data import DataObject
+    from weaviate.classes.query import Filter, MetadataQuery, Sort
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("weaviate", exc) from exc
 
 from ..core import Protector
 from ..metadata import BLIND_PREFIX

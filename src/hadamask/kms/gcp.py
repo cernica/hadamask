@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .._deps import missing_extra
 from .base import KeyWrapper
 
 
@@ -19,7 +20,10 @@ class GcpKmsKeyWrapper(KeyWrapper):
 
     def __init__(self, key_name: str, client=None) -> None:
         if client is None:
-            from google.cloud import kms
+            try:
+                from google.cloud import kms
+            except ImportError as exc:
+                raise missing_extra("gcp", exc) from exc
 
             client = kms.KeyManagementServiceClient()
         self.client = client

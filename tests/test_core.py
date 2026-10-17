@@ -352,3 +352,29 @@ def test_dense_first_column_is_uniform_on_the_sphere():
     cols = np.array([DenseTransform(MasterKey.generate(), 4)._q[:, 0] for _ in range(3000)])
     assert np.allclose(cols.mean(axis=0), 0, atol=0.05)
     assert np.allclose((cols**2).mean(axis=0), 0.25, atol=0.02)
+
+
+# -- optional dependencies -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "module, missing, extra",
+    [
+        ("hadamask.adapters.qdrant", "qdrant_client", "qdrant"),
+        ("hadamask.adapters.pgvector", "psycopg", "pgvector"),
+        ("hadamask.adapters.milvus", "pymilvus", "milvus"),
+        ("hadamask.integrations.langchain", "langchain_core", "langchain"),
+    ],
+)
+def test_missing_extra_gives_install_hint(monkeypatch, module, missing, extra):
+    import importlib
+    import sys
+
+    # None in sys.modules makes "import <missing>" raise ImportError; block already-imported
+    # submodules too, or "from <missing>.sub import x" would succeed from the cache.
+    for name in [m for m in sys.modules if m == missing or m.startswith(missing + ".")]:
+        monkeypatch.setitem(sys.modules, name, None)
+    monkeypatch.setitem(sys.modules, missing, None)
+    monkeypatch.delitem(sys.modules, module, raising=False)
+    with pytest.raises(ImportError, match=rf'pip install "hadamask\[{extra}\]"'):
+        importlib.import_module(module)

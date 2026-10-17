@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .._deps import missing_extra
 from .base import KeyWrapper
 
 
@@ -18,11 +19,17 @@ class AzureKeyVaultKeyWrapper(KeyWrapper):
     provider = "azure-kv"
 
     def __init__(self, key_id: str, credential=None, crypto_client=None, algorithm=None, **client_kwargs) -> None:
-        from azure.keyvault.keys.crypto import CryptographyClient, KeyWrapAlgorithm
+        try:
+            from azure.keyvault.keys.crypto import CryptographyClient, KeyWrapAlgorithm
+        except ImportError as exc:
+            raise missing_extra("azure", exc) from exc
 
         if crypto_client is None:
             if credential is None:
-                from azure.identity import DefaultAzureCredential
+                try:
+                    from azure.identity import DefaultAzureCredential
+                except ImportError as exc:
+                    raise missing_extra("azure", exc) from exc
 
                 credential = DefaultAzureCredential()
             crypto_client = CryptographyClient(key_id, credential, **client_kwargs)

@@ -21,7 +21,12 @@ import math
 from collections.abc import Iterator
 from typing import Any, Optional
 
-from pymilvus import DataType, MilvusClient
+from .._deps import missing_extra
+
+try:
+    from pymilvus import DataType, MilvusClient
+except ImportError as exc:  # pragma: no cover - depends on the installed extras
+    raise missing_extra("milvus", exc) from exc
 
 from ..core import Protector
 from .base import And, Condition, Filter, ProtectedStore, RawHit, RawRecord
