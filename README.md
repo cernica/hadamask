@@ -64,7 +64,7 @@ The method and its leakage are analysed in
 - [Security model](#security-model)
 - [Install](#install)
 - [Quick start](#quick-start)
-- [Core concepts](#core-concepts)
+- [Core concepts](#core-concepts) · [Choosing a transform: hadamard or dense](#choosing-a-transform)
 - [The store API](#the-store-api)
 - [Supported databases](#supported-databases)
 - [SDK wrappers for Qdrant and Weaviate](#sdk-wrappers-for-qdrant-and-weaviate)
@@ -270,6 +270,21 @@ protector = Protector(key, policy, transform="dense")
   measure*, which is why the paper calls it the Haar ideal. This has nothing to do with the
   Haar *wavelet*, and no Hadamard matrix is involved. The same key always gives the same
   matrix.
+
+**Which one to use.**
+
+| Your situation | Use |
+|---|---|
+| Embedding dimension is a power of two (256, 512, 1024, 4096) | `hadamard`: no padding needed, smallest memory footprint |
+| 384, 768, 1536, 3072 or any other dimension | `dense`: avoids padding (+33% storage for 1536 → 2048) |
+| pgvector with HNSW and more than 1024 dimensions | `dense` (with `hadamard`, 1536-d vectors become 2048-d, above pgvector's 2000-dimension HNSW limit) |
+| You want the paper's formal results for the ideal transform to apply to your data | `dense` |
+| Very large dimensions (8192+) or memory-constrained clients | `hadamard` (`dense` keeps a `d × d` matrix: 537 MB at 8192) |
+| You want exactly the construction evaluated experimentally in the paper | `hadamard` |
+
+Pick once per collection: vectors written with one transform cannot be searched with the
+other. To switch, `copy_to` a new collection whose store uses a `Protector` with the other
+transform.
 
 `dense` does not make the attacks measured in the paper harder: the geometry leaks the
 same way, and `d` known pairs recover either map. What it changes is that the paper's
