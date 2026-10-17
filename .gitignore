@@ -10,3 +10,4 @@ build/
 
 # Not part of the repository
 *.pdf
+.DS_Store
