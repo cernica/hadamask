@@ -43,10 +43,20 @@ The method and its leakage are analysed in
 (Cernica & Popescu, *Applied Sciences* 2026).
 
 > [!IMPORTANT]
-> The embedding transform is **obfuscation with measured leakage, not encryption**. It hides
-> the coordinate system, not the relative geometry of your corpus. Read the
-> [security model](#security-model) before deploying. hadamask is alpha software and has not
-> had an external cryptographic audit.
+> **What it is not.** The embedding transform is **obfuscation with measured leakage, not
+> encryption**. It hides the coordinate system, but the relative geometry of your corpus
+> (which documents are similar to which) stays visible. In the paper's experiments, an
+> attacker holding only the protected vectors and public data from the same distribution
+> inferred document topics with **81–87% accuracy** (four classes). Metadata *is*
+> encrypted. Read the [security model](#security-model) before deploying. hadamask is alpha
+> software and has not had an external cryptographic audit.
+
+> [!NOTE]
+> **What "exact" means.** Scores are mathematically identical to those on the clear vectors
+> (up to float32 rounding). With an approximate index such as HNSW, the database returns
+> what that index would return on the clear data: recall against exhaustive search is the
+> engine's own, not hadamask's. In the [benchmark](#benchmarks), recall and the top-10 sets
+> match the unprotected collections.
 
 ## Contents
 
@@ -63,6 +73,7 @@ The method and its leakage are analysed in
 - [Key rotation](#key-rotation)
 - [Command line](#command-line)
 - [Design](#design)
+- [Benchmarks](#benchmarks)
 - [Testing](#testing)
 - [Roadmap](#roadmap)
 - [Citation](#citation)
@@ -230,6 +241,27 @@ protector.encrypt_payload(payload)  # -> stored dict
 protector.decrypt_payload(stored)   # -> clear dict (also reads previous keys)
 protector.stored_dim(384)           # 512: create collections with this size
 ```
+
+### Choosing a transform
+
+| | `transform="hadamard"` (default) | `transform="haar"` |
+|---|---|---|
+| Map | `H·D2·P·H·D1` (paper, Eq. 3), structured, `O(d log d)` | Dense Haar-uniform orthogonal matrix, `O(d²)` |
+| Stored dimension | Next power of two: 384 → 512, 1536 → **2048** | **Native**: 1536 stays 1536 |
+| Storage overhead (1536-d, measured) | +34% | +2–5% |
+| pgvector HNSW with 1536-d embeddings | **Not possible** (pgvector limit: 2000 dims) | Works |
+| Client memory | Negligible | `8·d²` bytes per dimension: 19 MB for 1536, 75 MB for 3072 |
+| Security analysis | Structured key family; the paper's Haar theorems do not apply directly | Exactly the Haar ideal of the paper's Section 3.4 |
+
+```python
+protector = Protector(key, policy, transform="haar")
+```
+
+Both preserve scores exactly, and both leak the same relative geometry (the Gram matrix).
+Padding to a larger dimension adds **no** security: the data still spans a `d`-dimensional
+subspace, so its rank reveals `d`, and its spectrum is unchanged (paper, Proposition 1). For
+1536-d or 3072-d embeddings, or any pgvector deployment, use `haar`. A collection must be
+written and queried with the same transform.
 
 ## The store API
 
@@ -475,6 +507,7 @@ hadamask info 1536                                          # 1536 -> stored dim
 | Transform | `Q = H·D2·P·H·D1` (paper, Eq. 3). `H` is the normalized Walsh–Hadamard transform (FWHT, O(D log D)), `D1`/`D2` are sign vectors, `P` is a permutation |
 | Randomness | HMAC-SHA256 streams of the master key with separate labels; Fisher–Yates with rejection sampling for `P` |
 | Dimensions | Native `d` is zero-padded to the next power of two `D`; queries are padded the same way |
+| Haar transform | `transform="haar"`: sign-corrected QR of a Gaussian matrix drawn from a ChaCha20 keystream under a derived key; exactly Haar-uniform, no padding |
 | Metadata | AES-256-GCM, 96-bit random nonce per value; associated data = key id and field name |
 | Length hiding | ISO/IEC 7816-4 padding to `min_padded_length` (64 bytes), then powers of two, or a fixed size per field |
 | Blind tokens | HMAC-SHA256 under a derived key, truncated to 128 bits |
@@ -487,6 +520,34 @@ Section 3.5.5) is available for dot-product collections only.
 Approximate indexes return the same sets as clear search, up to the engine's own ANN and
 float32 behaviour (paper, Section 5.7). Some engines quantize by default (Elasticsearch
 `int8_hnsw`); the adapters choose unquantized indexes explicitly.
+
+## Benchmarks
+
+100,000 real documents (DBpedia, OpenAI ada-002 embeddings, 1536-d) and 1,000 held-out
+queries. Each row compares a hadamask-protected collection with an unprotected one on the
+same database, with the same HNSW settings (`m=16`, `ef=128`), the same data, and one
+single-threaded client measuring end-to-end latency. Full tables, including p95/p99, ingest
+time and memory, are in [benchmarks/results/RESULTS.md](benchmarks/results/RESULTS.md).
+
+| | Qdrant, unprotected | Qdrant, hadamask `haar` | pgvector, unprotected | pgvector, hadamask `haar` |
+|---|---:|---:|---:|---:|
+| Recall@10 vs exact search | 0.991 | 0.991 | 0.995 | 0.995 |
+| Query latency p50 | 3.63 ms | 4.01 ms (1.11×) | 5.69 ms | 6.34 ms (1.11×) |
+| Throughput, one client | 260 q/s | 235 q/s (0.91×) | 178 q/s | 154 q/s (0.86×) |
+| Storage per 1M vectors | 13.2 GB | 13.8 GB (1.05×) | 17.0 GB | 17.4 GB (1.02×) |
+| Server CPU per 1M queries | 2,338 CPU-s | 2,245 CPU-s (0.96×) | 4,218 CPU-s | 4,466 CPU-s (1.06×) |
+
+With the default `hadamard` transform, the 2048-d stored vectors cost +34% storage on
+Qdrant. On pgvector they cannot be HNSW-indexed at all, so search falls back to an exact
+scan: 212 ms instead of 5.7 ms. On the client, the `haar` transform runs at about 77,000
+vectors/s in batches (0.17 ms for a single query). Encrypting or decrypting a payload
+(title and text) takes 5–7 µs; padding and the envelope grow the mean payload from 404 to
+838 bytes.
+
+Caveats: one machine (Apple Silicon laptop, databases in Docker); one run per
+configuration; HNSW graphs built from different coordinates differ slightly, so
+protected and unprotected top-10 sets overlap at 0.99 rather than 1.00, with the same
+recall. Reproduce with `python benchmarks/run.py` ([instructions](benchmarks/README.md)).
 
 ## Testing
 
@@ -503,7 +564,8 @@ pytest -m cloud                      # Qdrant Cloud and Weaviate Cloud (QDRANT_C
 - Hybrid search: protected BM25 / sparse vectors
 - Named and multiple vectors per record in the store API
 - Async API
-- Reproducible leakage benchmarks on real embeddings
+- Reproducible leakage benchmarks on real embeddings (attack demos)
+- Benchmarks for the other seven databases, repeated runs
 - External security review
 
 ## Citation

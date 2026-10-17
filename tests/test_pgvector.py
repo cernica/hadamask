@@ -66,3 +66,14 @@ def test_unknown_search_option_rejected():
             store._search("whatever", [0.0] * 8, 3, None, False, {"bogus": 1})
     finally:
         store.close()
+
+
+def test_hnsw_dimension_limit_is_explained():
+    from hadamask import MasterKey, Protector
+
+    require_service(5433, "pgvector")
+    with pytest.raises(ValueError, match="transform='haar'"):
+        PgVectorStore(DSN, Protector(MasterKey.generate()), hnsw=True).create_collection("too_wide", 1536)
+    store = PgVectorStore(DSN, Protector(MasterKey.generate(), transform="haar"), hnsw=True)
+    store.create_collection("haar_1536", 1536)
+    store.drop_collection("haar_1536")

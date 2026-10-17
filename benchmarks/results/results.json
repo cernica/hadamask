@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "n_docs": 100000,
+    "n_queries": 1000,
+    "k": 10,
+    "ef": 128,
+    "platform": "arm64, Darwin 25.6.0, Python 3.12.13, databases in Docker (colima)"
+  },
+  "client": {
+    "hadamard": {
+      "native_dim": 1536,
+      "stored_dim": 2048,
+      "encode_vectors_per_s": 11948.647818676274,
+      "encode_cpu_s_per_1M_vectors": 82.89281,
+      "encode_single_query": {
+        "p50_ms": 0.10033405851572752,
+        "p95_ms": 0.10530136059969662,
+        "p99_ms": 0.11581702390685675,
+        "mean_ms": 0.10100195789709687
+      },
+      "encrypt_us_per_record": 6.8443999999999505,
+      "decrypt_us_per_record": 4.783600000000021,
+      "payload_bytes_clear": 404.1656,
+      "payload_bytes_encrypted": 837.5434
+    },
+    "haar": {
+      "native_dim": 1536,
+      "stored_dim": 1536,
+      "encode_vectors_per_s": 76970.13729757264,
+      "encode_cpu_s_per_1M_vectors": 12.979779999999987,
+      "encode_single_query": {
+        "p50_ms": 0.16654201317578554,
+        "p95_ms": 0.40954787400551135,
+        "p99_ms": 0.5037209461443126,
+        "mean_ms": 0.20642780850175768
+      },
+      "encrypt_us_per_record": 6.887200000000604,
+      "decrypt_us_per_record": 4.902200000000079,
+      "payload_bytes_clear": 404.1656,
+      "payload_bytes_encrypted": 837.5434
+    }
+  },
+  "databases": {
+    "pgvector": {
+      "clear": {
+        "stored_dim": 1536,
+        "note": "",
+        "recall_at_k": 0.9950999999999999,
+        "overlap_with_clear": 1.0,
+        "latency": {
+          "p50_ms": 5.69168699439615,
+          "p95_ms": 7.97812949749641,
+          "p99_ms": 10.07964095682837,
+          "mean_ms": 5.626265695202164
+        },
+        "qps_single_client": 177.6780424991473,
+        "ingest_s": 667.2711120420136,
+        "ready_s": 667.2711120420136,
+        "storage_mb": 1702.699008,
+        "storage_gb_per_1M_vectors": 17.026990080000004,
+        "server_memory_mb": 3404.746752,
+        "server_cpu_s_per_1M_queries": 4217.646999999943,
+        "client_cpu_s_per_1M_queries": 244.43399999998402
+      },
+      "hadamard": {
+        "stored_dim": 2048,
+        "note": "exact scan: HNSW limited to 2000 dims",
+        "recall_at_k": 1.0,
+        "overlap_with_clear": 0.9950999999999999,
+        "latency": {
+          "p50_ms": 212.4503749073483,
+          "p95_ms": 233.74363921466284,
+          "p99_ms": 318.25587356463075,
+          "mean_ms": 216.60781724296976
+        },
+        "qps_single_client": 4.616584160188902,
+        "ingest_s": 16.035641459049657,
+        "ready_s": 16.035641459049657,
+        "storage_mb": 950.419456,
+        "storage_gb_per_1M_vectors": 9.50419456,
+        "server_memory_mb": 2630.32832,
+        "server_cpu_s_per_1M_queries": 637854.8259999998,
+        "client_cpu_s_per_1M_queries": 717.708000000016
+      },
+      "haar": {
+        "stored_dim": 1536,
+        "note": "",
+        "recall_at_k": 0.9952000000000001,
+        "overlap_with_clear": 0.9994,
+        "latency": {
+          "p50_ms": 6.338021019473672,
+          "p95_ms": 10.225012770388275,
+          "p99_ms": 11.678988705389202,
+          "mean_ms": 6.506476066424511
+        },
+        "qps_single_client": 153.65263820579182,
+        "ingest_s": 659.3025414580479,
+        "ready_s": 659.3025414580479,
+        "storage_mb": 1744.723968,
+        "storage_gb_per_1M_vectors": 17.44723968,
+        "server_memory_mb": 3446.337536,
+        "server_cpu_s_per_1M_queries": 4465.865000000122,
+        "client_cpu_s_per_1M_queries": 692.7849999999864
+      }
+    },
+    "qdrant": {
+      "clear": {
+        "stored_dim": 1536,
+        "note": "",
+        "recall_at_k": 0.9911,
+        "overlap_with_clear": 1.0,
+        "latency": {
+          "p50_ms": 3.628312493674457,
+          "p95_ms": 5.457225337158889,
+          "p99_ms": 6.3424176641274235,
+          "mean_ms": 3.846075182547793
+        },
+        "qps_single_client": 259.8085607088192,
+        "ingest_s": 76.99423787498381,
+        "ready_s": 115.00852170889266,
+        "storage_mb": 1319.0,
+        "storage_gb_per_1M_vectors": 13.19,
+        "server_memory_mb": 1573.015552,
+        "server_cpu_s_per_1M_queries": 2337.8679999999576,
+        "client_cpu_s_per_1M_queries": 1068.6100000000067
+      },
+      "hadamard": {
+        "stored_dim": 2048,
+        "note": "",
+        "recall_at_k": 0.9916,
+        "overlap_with_clear": 0.9902000000000001,
+        "latency": {
+          "p50_ms": 4.134749993681908,
+          "p95_ms": 6.028763123322278,
+          "p99_ms": 6.549720044713467,
+          "mean_ms": 4.364584966679104
+        },
+        "qps_single_client": 228.990229876682,
+        "ingest_s": 97.48605866602156,
+        "ready_s": 143.3555683749728,
+        "storage_mb": 1769.0,
+        "storage_gb_per_1M_vectors": 17.69,
+        "server_memory_mb": 2013.57312,
+        "server_cpu_s_per_1M_queries": 2472.837000000027,
+        "client_cpu_s_per_1M_queries": 1453.9240000000007
+      },
+      "haar": {
+        "stored_dim": 1536,
+        "note": "",
+        "recall_at_k": 0.9907999999999999,
+        "overlap_with_clear": 0.9897999999999999,
+        "latency": {
+          "p50_ms": 4.009458469226956,
+          "p95_ms": 5.992457992397249,
+          "p99_ms": 6.322493717307225,
+          "mean_ms": 4.250009414739907
+        },
+        "qps_single_client": 235.1524175634498,
+        "ingest_s": 67.55137824988924,
+        "ready_s": 101.93531362491194,
+        "storage_mb": 1381.0,
+        "storage_gb_per_1M_vectors": 13.81,
+        "server_memory_mb": 1599.082496,
+        "server_cpu_s_per_1M_queries": 2245.013999999969,
+        "client_cpu_s_per_1M_queries": 1521.0930000000076
+      }
+    }
+  }
+}

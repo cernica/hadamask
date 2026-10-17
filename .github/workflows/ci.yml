@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Weekly run against the newest database client SDKs (dependencies are not pinned), so
+  # upstream breaking changes show up here before they reach users.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 jobs:
   lint:

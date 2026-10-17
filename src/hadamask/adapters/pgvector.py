@@ -39,6 +39,7 @@ from psycopg.types.json import Jsonb
 from ..core import Protector
 from .base import And, Condition, Filter, ProtectedStore, RawHit, RawRecord
 
+HNSW_MAX_DIM = 2000  # pgvector limit for the vector type
 _NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
 _OPS = {
     "cosine": ("<=>", "vector_cosine_ops", "1 - ({col} <=> %s)"),
@@ -117,6 +118,13 @@ class PgVectorStore(ProtectedStore):
     def create_collection(self, name: str, dim: int, metric: str = "cosine") -> None:
         self._check_metric(metric)
         table = _ident(name)
+        stored = self.protector.stored_dim(dim)
+        if self.hnsw and stored > HNSW_MAX_DIM:
+            raise ValueError(
+                f"pgvector HNSW indexes support at most {HNSW_MAX_DIM} dimensions, but {dim}-d vectors are stored "
+                f"as {stored}-d with the hadamard transform. Use Protector(..., transform='haar') to keep {dim} "
+                "dimensions, or hnsw=False for exact scans."
+            )
         with self.conn.transaction():
             self.conn.execute(
                 sql.SQL("CREATE TABLE {} (id TEXT PRIMARY KEY, embedding vector({}) NOT NULL, payload JSONB)").format(
@@ -168,12 +176,12 @@ class PgVectorStore(ProtectedStore):
         q = np.asarray(vector, dtype=np.float32)
         with self.conn.transaction(), self.conn.cursor() as cur:
             if self.hnsw:
-                cur.execute(sql.SQL("SET LOCAL hnsw.ef_search = {}").format(sql.Literal(ef_search)))
-                try:
-                    with self.conn.transaction():
-                        cur.execute(sql.SQL("SET LOCAL hnsw.iterative_scan = {}").format(sql.Literal(iterative_scan)))
-                except psycopg.errors.UndefinedObject:
-                    pass  # pgvector < 0.8
+                # One round trip for both settings. On pgvector < 0.8, hnsw.iterative_scan is just
+                # an unused placeholder setting, so no savepoint is needed.
+                cur.execute(
+                    "SELECT set_config('hnsw.ef_search', %s, true), set_config('hnsw.iterative_scan', %s, true)",
+                    [str(ef_search), iterative_scan],
+                )
             cur.execute(query, [q, *where_params, q, k])
             rows = cur.fetchall()
         return [RawHit(r[0], float(r[1]), r[2], r[3].to_numpy().tolist() if with_vectors else None) for r in rows]

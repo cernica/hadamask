@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- `Protector(..., transform="haar")`: dense Haar-uniform transform that keeps the native
+  dimension. It has no padding overhead, makes HNSW possible on pgvector for 1536-d
+  embeddings (limit 2000), and matches the paper's ideal analysis exactly.
+- `PgVectorStore` explains pgvector's 2000-dimension HNSW limit instead of failing in Postgres,
+  and applies search settings in one round trip (about 3 fewer round trips per query).
+- Reproducible benchmark (`benchmarks/run.py`) against unprotected storage on real OpenAI
+  embeddings.
+- Weekly CI run against the newest database client SDKs.
+
 ## 0.1.0 (unreleased)
 
 First public version.

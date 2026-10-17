@@ -152,3 +152,78 @@ class OrthogonalTransform:
         arr, single = self._as_matrix(vectors, self.processing_dim)
         out = new._forward(self._backward(arr)).astype(np.float32)
         return out[0] if single else out
+
+
+class HaarTransform:
+    """Dense keyed orthogonal map ``v -> Q v`` with ``Q`` Haar-distributed in ``O(d)``.
+
+    No padding: protected vectors keep the native dimension, so there is no storage
+    overhead and no conflict with engine dimension limits (pgvector's HNSW accepts at most
+    2000 dimensions, which rules out 1536-d embeddings padded to 2048). ``Q`` is sampled as
+    the sign-corrected QR factor of a Gaussian matrix, which is exactly Haar-uniform, so the
+    paper's ideal-transform results (Section 3.4) describe this implementation directly.
+
+    Cost: ``Q`` takes ``8·d²`` bytes in memory (19 MB for d = 1536) and is built once per
+    dimension; each vector costs ``O(d²)`` instead of ``O(d log d)``.
+
+    The Gaussian entries come from a ChaCha20 keystream under a key derived from the master
+    key, so every process with the same key builds the same ``Q`` (up to floating-point
+    rounding in the QR step, far below float32 storage precision).
+    """
+
+    def __init__(self, key: MasterKey, dim: int) -> None:
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
+
+        if dim <= 0:
+            raise ValueError("dim must be positive")
+        self.key_id = key.key_id
+        self.dim = dim
+        self.processing_dim = dim
+        seed = key.derive(f"transform/haar/d={dim}")
+        stream = Cipher(algorithms.ChaCha20(seed, b"\x00" * 16), mode=None).encryptor()
+        n = dim * dim
+        half = (n + 1) // 2  # Box-Muller needs pairs: draw 2 * half uniforms
+        raw = np.frombuffer(stream.update(b"\x00" * (16 * half)), dtype="<u8")
+        # 53-bit uniforms in (0, 1], then Box-Muller for standard normals.
+        u = ((raw >> np.uint64(11)).astype(np.float64) + 1.0) / 2.0**53
+        radius = np.sqrt(-2.0 * np.log(u[:half]))
+        angle = 2.0 * np.pi * u[half:]
+        gaussian = np.concatenate([radius * np.cos(angle), radius * np.sin(angle)])[:n]
+        q, r = np.linalg.qr(gaussian.reshape(dim, dim))
+        self._q = q * np.sign(np.diag(r))  # Mezzadri's correction: makes the QR factor Haar
+        del gaussian, raw, u
+
+    @property
+    def output_dim(self) -> int:
+        return self.dim
+
+    def _as_matrix(self, vectors) -> tuple[np.ndarray, bool]:
+        arr = np.asarray(vectors, dtype=np.float64)
+        single = arr.ndim == 1
+        if single:
+            arr = arr[None, :]
+        if arr.ndim != 2 or arr.shape[1] != self.dim:
+            raise ValueError(f"expected vectors of dimension {self.dim}, got shape {np.shape(vectors)}")
+        if not np.isfinite(arr).all():
+            raise ValueError("vectors contain NaN or infinite values")
+        return arr, single
+
+    def encode(self, vectors, noise_norm: float = 0.0) -> np.ndarray:
+        if noise_norm:
+            raise ValueError("noise padding needs padding coordinates; use the hadamard transform")
+        arr, single = self._as_matrix(vectors)
+        out = (arr @ self._q.T).astype(np.float32)
+        return out[0] if single else out
+
+    def decode(self, vectors) -> np.ndarray:
+        arr, single = self._as_matrix(vectors)
+        out = (arr @ self._q).astype(np.float32)
+        return out[0] if single else out
+
+    def rekey_to(self, new: HaarTransform, vectors) -> np.ndarray:
+        """Re-map stored vectors to ``new`` without re-embedding (``Q_new Q_old^T``)."""
+        if not isinstance(new, HaarTransform) or new.dim != self.dim:
+            raise ValueError("both transforms must be Haar transforms of the same dimension")
+        arr, single = self._as_matrix(vectors)
+        out = ((arr @ self._q) @ new._q.T).astype(np.float32)
+        return out[0] if single else out

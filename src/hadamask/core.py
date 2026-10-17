@@ -8,7 +8,9 @@ import numpy as np
 
 from .keys import MasterKey
 from .metadata import MetadataCipher, MetadataPolicy
-from .transform import OrthogonalTransform, next_power_of_two
+from .transform import HaarTransform, OrthogonalTransform, next_power_of_two
+
+TRANSFORMS = ("hadamard", "haar")
 
 
 class Protector:
@@ -24,10 +26,16 @@ class Protector:
     policy:
         Metadata policy; by default every field is encrypted.
     processing_dims:
-        Optional ``{native_dim: processing_dim}`` overrides. By default each native
-        dimension is padded to the next power of two.
+        Optional ``{native_dim: processing_dim}`` overrides for the ``hadamard`` transform.
+        By default each native dimension is padded to the next power of two.
     previous_keys:
         Older keys, used only to decrypt metadata written before a key rotation.
+    transform:
+        ``"hadamard"`` (default): the paper's structured map ``H·D2·P·H·D1``, fast, but pads
+        to a power of two (1536 -> 2048). ``"haar"``: a dense Haar-uniform map that keeps the
+        native dimension (no storage overhead, fits pgvector's 2000-dimension HNSW limit)
+        at the cost of an ``O(d^2)`` transform and ``8·d²`` bytes of memory. The two produce
+        different vectors: a collection must be written and queried with the same one.
     """
 
     def __init__(
@@ -36,11 +44,17 @@ class Protector:
         policy: Optional[MetadataPolicy] = None,
         processing_dims: Optional[Mapping[int, int]] = None,
         previous_keys: Iterable[MasterKey] = (),
+        transform: str = "hadamard",
     ) -> None:
+        if transform not in TRANSFORMS:
+            raise ValueError(f"transform must be one of {TRANSFORMS}, got {transform!r}")
+        if transform == "haar" and processing_dims:
+            raise ValueError("processing_dims applies to the hadamard transform only")
         self.key = key
+        self.transform_kind = transform
         self.metadata = MetadataCipher(key, policy, previous_keys)
         self._processing_dims = dict(processing_dims or {})
-        self._transforms: dict[int, OrthogonalTransform] = {}
+        self._transforms: dict[int, OrthogonalTransform | HaarTransform] = {}
 
     @property
     def key_id(self) -> str:
@@ -52,13 +66,18 @@ class Protector:
 
     # -- vectors ---------------------------------------------------------------------
 
-    def transform(self, dim: int) -> OrthogonalTransform:
+    def transform(self, dim: int) -> OrthogonalTransform | HaarTransform:
         if dim not in self._transforms:
-            self._transforms[dim] = OrthogonalTransform(self.key, dim, self._processing_dims.get(dim))
+            if self.transform_kind == "haar":
+                self._transforms[dim] = HaarTransform(self.key, dim)
+            else:
+                self._transforms[dim] = OrthogonalTransform(self.key, dim, self._processing_dims.get(dim))
         return self._transforms[dim]
 
     def stored_dim(self, dim: int) -> int:
         """Dimension of protected vectors for native dimension ``dim`` (create collections with it)."""
+        if self.transform_kind == "haar":
+            return dim
         return self._processing_dims.get(dim) or next_power_of_two(dim)
 
     def encode(self, vectors) -> np.ndarray:

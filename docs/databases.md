@@ -78,7 +78,15 @@ The Docker image needs `DEPLOY_MODE=STANDALONE` with embedded etcd (see `docker-
 List values in clear are refused: chromadb 1.5.9 leaked array metadata across collections
 in our tests (a server bug), and `$eq` does not match array elements anyway.
 
-**pgvector.** One table per collection (`id TEXT`, `embedding vector(D)`, `payload JSONB`);
+**pgvector.** pgvector's HNSW index accepts at most 2000 dimensions for the `vector` type.
+With the default `hadamard` transform, 1536-d embeddings (OpenAI ada-002,
+text-embedding-3-small) are stored as 2048-d and cannot be HNSW-indexed: use
+`Protector(..., transform="haar")`, which keeps 1536 dimensions. `PgVectorStore` raises a
+clear error instead of Postgres' `ProgramLimitExceeded`. Search settings are applied with a
+single `set_config` round trip. Note that at small table sizes, a high `ef_search` can make
+the planner prefer an exact sequential scan.
+
+**pgvector (layout).** One table per collection (`id TEXT`, `embedding vector(D)`, `payload JSONB`);
 filters use `payload @> %s::jsonb` with bound parameters plus a GIN index. Collection names
 are validated against a strict identifier regex. The compose file maps Postgres to port 5433.
 
